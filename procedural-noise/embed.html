@@ -1,0 +1,100 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+<title>Procedural Noise Texture Generator — Embed</title>
+<style>
+  html, body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    overflow: hidden;
+    background: #0d1117;
+  }
+
+  #tool {
+    display: block;
+    border: 0;
+    margin: 0;
+    padding: 0;
+    transform-origin: 0 0;
+    background: #0d1117;
+  }
+</style>
+</head>
+<body>
+<iframe id="tool" src="./" title="Procedural Noise Texture Generator"></iframe>
+<script>
+(() => {
+  const tool = document.getElementById('tool');
+  let scheduled = false;
+
+  function scheduleFit() {
+    if (scheduled) return;
+    scheduled = true;
+    requestAnimationFrame(() => {
+      scheduled = false;
+      fitTool();
+    });
+  }
+
+  function getContentHeight() {
+    const doc = tool.contentDocument;
+    if (!doc) return 0;
+    const html = doc.documentElement;
+    const body = doc.body;
+    return Math.max(
+      html ? html.scrollHeight : 0,
+      html ? html.offsetHeight : 0,
+      body ? body.scrollHeight : 0,
+      body ? body.offsetHeight : 0
+    );
+  }
+
+  function fitTool() {
+    if (!tool.contentDocument) return;
+
+    const viewportWidth = Math.max(1, window.innerWidth);
+    const viewportHeight = Math.max(1, window.innerHeight);
+    let scale = 1;
+
+    // A few passes account for the source page reflowing as its effective
+    // iframe width changes while we fit it to the available Notion frame.
+    for (let i = 0; i < 4; i++) {
+      const innerWidth = viewportWidth / scale;
+      const innerHeight = viewportHeight / scale;
+
+      tool.style.transform = 'none';
+      tool.style.width = `${innerWidth}px`;
+      tool.style.height = `${innerHeight}px`;
+
+      const contentHeight = getContentHeight();
+      if (!contentHeight) return;
+
+      const nextScale = Math.min(1, viewportHeight / contentHeight);
+      if (Math.abs(nextScale - scale) < 0.002) {
+        scale = nextScale;
+        break;
+      }
+      scale = nextScale;
+    }
+
+    // Give the source page exactly the unscaled size it needs. After the
+    // transform, the complete tool occupies the available outer frame.
+    tool.style.width = `${viewportWidth / scale}px`;
+    tool.style.height = `${viewportHeight / scale}px`;
+    tool.style.transform = `scale(${scale})`;
+  }
+
+  tool.addEventListener('load', () => {
+    fitTool();
+    setTimeout(fitTool, 50);
+    setTimeout(fitTool, 250);
+  });
+
+  window.addEventListener('resize', scheduleFit, { passive: true });
+})();
+</script>
+</body>
+</html>
